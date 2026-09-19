@@ -686,11 +686,13 @@ void ViewImpl::DrawTXT( const VDrawInfo& v, Painter& p )
 					continue;
 
 				// x, i := このトークンの左端
+				unicode first = str[i];
+				ulong i0 = i;
 				if( x<v.XMIN )
 				{
 					// tabの分が戻りすぎ？
 					x = x2, i = i2;
-					while( v.XMIN<x )
+					while( v.XMIN<x && i>i0 )
 						x -= p.W( &str[--i] );
 				}
 
@@ -700,7 +702,7 @@ void ViewImpl::DrawTXT( const VDrawInfo& v, Painter& p )
 				p.Fill( a );
 
 				// 描画
-				switch( str[i] )
+				switch( first )
 				{
 				case L'\t':
 					if( p.sc(scTAB) )
