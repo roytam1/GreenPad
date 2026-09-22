@@ -373,7 +373,29 @@ void SearchManager::ConstructSearcher( bool down )
 		}
 		else
 		{
-			bMultiSearch_ = false;
+			bool plainMulti = false;
+			if( bEscapes_ && decKey!=NULL )
+			{
+				ulong nd = 0;
+				for( ulong si=0; key[si]!=L'\0'; )
+				{
+					if( key[si]==L'\r' )
+					{
+						if( key[si+1]==L'\n' )
+							++si;
+						decKey[nd++]=L'\n';
+						++si;
+					}
+					else
+						decKey[nd++]=key[si++];
+				}
+				decKey[nd]=L'\0';
+				key = decKey;
+			}
+			for( const unicode* pp=key; *pp!=L'\0'; ++pp )
+				if( *pp==L'\n' || *pp==L'\r' )
+					{ plainMulti = true; break; }
+			bMultiSearch_ = plainMulti;
 			if( key[0]==L'\0' )
 			{
 				searcher_ = NULL;
@@ -398,10 +420,46 @@ void SearchManager::ConstructSearcher( bool down )
 	}
 	else if( !bChanged_ && isReady() )
 	{
-		if( !bRegExp_ || !bMultiline_ )
+		if( findStr_.len()==0 )
 			bMultiSearch_ = false;
+		else if( bRegExp_ )
+		{
+			if( !bMultiline_ )
+				bMultiSearch_ = false;
+			else
+				bMultiSearch_ = searcher_->canSpanLines();
+		}
+		else if( bEscapes_ )
+		{
+			const unicode *ru = findStr_.ConvToWChar();
+			ulong rlen = my_lstrlenW( ru );
+			unicode *rd = new unicode[rlen+1];
+			ulong rdlen = DecodeReplacement( ru, rd );
+			rd[rdlen]=L'\0';
+			ulong w = 0;
+			for( ulong r=0; rd[r]!=L'\0'; )
+			{
+				if( rd[r]==L'\r' )
+				{
+					if( rd[r+1]==L'\n' )
+						++r;
+					rd[w++]=L'\n';
+					++r;
+				}
+				else
+					rd[w++]=rd[r++];
+			}
+			rd[w]=L'\0';
+			bool pm = false;
+			for( ulong r=0; rd[r]!=L'\0'; ++r )
+				if( rd[r]==L'\n' )
+					{ pm = true; break; }
+			bMultiSearch_ = pm;
+			findStr_.FreeWCMem( ru );
+			delete [] rd;
+		}
 		else
-			bMultiSearch_ = searcher_->canSpanLines();
+			bMultiSearch_ = false;
 	}
 	else
 	{
