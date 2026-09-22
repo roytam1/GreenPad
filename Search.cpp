@@ -186,6 +186,8 @@ void SearchManager::on_init()
 		SendMsgToItem( IDC_ESCAPES, BM_SETCHECK, BST_CHECKED );
 	if( bMultiline_ )
 		SendMsgToItem( IDC_MULTILINE, BM_SETCHECK, BST_CHECKED );
+	::EnableWindow( item( IDC_ESCAPES ), !bRegExp_ );
+	::EnableWindow( item( IDC_MULTILINE ), bRegExp_ );
 
 	if( edit_.getCursor().isSelected() )
 	{
@@ -249,10 +251,17 @@ bool SearchManager::on_command( UINT cmd, UINT id, HWND ctrl )
 		{
 		// チェックボックスの変更があったことを記憶
 		case IDC_IGNORECASE:
-		case IDC_REGEXP:
 		case IDC_ESCAPES:
 		case IDC_MULTILINE:
 			bChanged_ = true;
+			break;
+		case IDC_REGEXP:
+			bChanged_ = true;
+			{
+				bool rx = (BST_CHECKED==SendMsgToItem( IDC_REGEXP, BM_GETCHECK ));
+				::EnableWindow( item( IDC_ESCAPES ), !rx );
+				::EnableWindow( item( IDC_MULTILINE ), rx );
+			}
 			break;
 		// ボタンが押された場合
 		case ID_FINDNEXT:
